@@ -1,0 +1,100 @@
+# Monitoring with Prometheus and Grafana
+
+## Questions and Answers
+
+#### Question 1: Container Orchestration Analysis
+
+### Answer 1:
+
+The Node Exporter needs host-level access to collect actual hardware metrics. Without the correct mounts, it would only report the container's limited view, not the real CPU or memory stats of the host system.
+
+#### Question 2: Network Security Implications
+
+The lab creates a custom Docker network named "prometheus-grafana". Analyze the security
+implications of this setup versus using the default Docker network. What potential
+vulnerabilities could arise from the current port exposure configuration (9090, 9100, 3000), and
+how would you modify the setup for a production environment?
+
+### Answer 2:
+
+The default docker network bridge IPV4 is set `0.0.0.0`, meaning any instances (EC2) on the same network would have access to the services on the network. Using a named network isolates services better than the default bridge, but the open ports create major exposure risks.
+
+To improve this setup; we can change the default ports of prometheus and Grafana to a different ports; We can also setup a proxy on the services using those ports to isolate the instance from the client access point. In production, sensitive endpoints like Prometheus and Node Exporter should not be accessible externally.
+
+#### Question 3: Data Persistence Strategy
+
+### Answer 3:
+
+Prometheus stores high-volume time-series data, so persistent storage ensures retention. Grafana holds dashboards and settings, which are critical for reuse. Without volumes, both tools would lose all state after container restarts.
+
+#### Question 4: PromQL Logic Breakdown
+
+### Answer 4:
+
+Subtracting the boot time from the current system time returns the uptime in seconds. However, this assumes system time is accurate, which might not hold during time syncs or reboots. A safer method would involve using `time()` to compare against `node_boot_time_seconds`.
+
+#### Question 5: Memory Metrics Deep Dive
+
+### Answer 5:
+
+MemAvailable includes memory used by caches and buffers that the OS can reclaim, while MemFree does not. Using MemFree gives an inaccurate low reading on healthy systems that are efficiently using RAM for caching.
+
+#### Question 6: Filesystem Query Analysis
+
+### Answer 6:
+
+The query calculates the used disk ratio by subtracting the available space percentage from 1. If used on multiple mount points, it may report misleading results unless filtered properly. Temporary filesystems like `tmpfs` should be excluded using a label filter on `fstype`.
+
+#### Question 7: Visualization Type Justification
+
+### Answer 7:
+
+Stat panels work best for single values like CPU load, time series helps track trends over time, and gauges visually represent thresholds. Each format highlights data differently depending on context.
+
+#### Question 8: Threshold Configuration Strategy
+
+### Answer 8:
+
+The 80% mark is commonly used as a safe margin, but it doesn't suit every server. A smarter system would adjust thresholds based on the type of workload or disk usage patterns to reduce false alarms.
+
+#### Question 9: Dashboard Variable Implementation
+
+### Answer 9:
+
+Variables like `$job` allow users to filter panels dynamically. If not properly scoped or validated, unexpected values could break queries. Testing with edge cases and ensuring fallbacks is essential.
+
+#### Question 10: Resource Planning and Scaling
+
+### Answer 10:
+
+For 100 servers, expect a need for at least 4 vCPUs, 16–32GB RAM, and 500–800GB of storage for a month of data at 10s scrape intervals. Memory pressure is likely to be the first scalability challenge.
+
+#### Question 11: High Availability Design
+
+### Answer 11:
+
+High availability would involve multiple Prometheus instances scraping the same targets, with external storage like Thanos or Cortex. Grafana should run in a cluster with shared DB. Complexity increases, but so does resilience.
+
+#### Question 12: Security Hardening Analysis
+
+### Answer 12:
+
+The lab lacks access controls, encryption, and secret isolation. These can be mitigated by enforcing auth layers, rotating credentials, encrypting traffic with TLS, and using secret managers like Vault or Docker secrets.
+
+#### Question 13: Debugging Methodology
+
+### Answer 13:
+
+When a target is down, I first check network connectivity and whether the exporter is reachable. Then I verify the scrape configs and look through logs to find errors. DNS and firewall issues are typical culprits.
+
+#### Question 14: Performance Optimization
+
+### Answer 14:
+
+Queries using `rate()` or aggregations across all series can strain performance. Optimizing queries by narrowing labels and using precomputed recording rules can help. Prometheus itself can be monitored through its own `up` and `tsdb` metrics.
+
+#### Question 15: Capacity Planning Scenario
+
+### Answer 15:
+
+Disk usage grows due to retention length, scrape frequency, and high-cardinality metrics. A balance can be struck by shortening retention, downsampling older data, or exporting archives for long-term analysis.
