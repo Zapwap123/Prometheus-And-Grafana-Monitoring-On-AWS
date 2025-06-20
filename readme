@@ -1,5 +1,9 @@
 # Monitoring with Prometheus and Grafana
 
+## 🧱 Architecture Diagram
+
+![Architecture Diagram](./Seth-Anmawen-Architectural-Diagram.drawio.png)
+
 ## Questions and Answers
 
 #### Question 1: Container Orchestration Analysis
